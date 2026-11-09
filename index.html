@@ -282,19 +282,23 @@
   dialog {
     width: min(calc(100% - 32px), 480px);
     padding: 0;
-    border: 5px solid var(--ink);
-    border-radius: 26px;
-    background: var(--paper);
-    color: var(--ink);
-    box-shadow: 10px 12px 0 var(--ink);
+    border: 0;
+    background: transparent;
     overflow: visible;
   }
 
   dialog::backdrop { background: rgba(7, 21, 72, .72); }
 
-  dialog[open] { animation: pop .38s cubic-bezier(.2, 1.5, .4, 1); }
-
-  .result { padding: 32px 24px 24px; text-align: center; }
+  .result {
+    padding: 32px 24px 24px;
+    border: 5px solid var(--ink);
+    border-radius: 26px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 10px 12px 0 var(--ink);
+    text-align: center;
+    animation: pop .38s cubic-bezier(.2, 1.5, .4, 1);
+  }
 
   .result p { margin: 0; color: var(--muted); font-size: 1.1rem; font-weight: 500; }
 
@@ -321,24 +325,15 @@
   .secondary { background: var(--ice); color: var(--ink); }
   .secondary:hover { background: #A5D1FB; }
 
-  .confetti { position: absolute; top: 40%; left: 50%; pointer-events: none; }
-
-  .confetti i {
-    position: absolute;
-    width: 11px;
-    height: 16px;
-    border-radius: 3px;
-    opacity: 0;
-    animation: fly 1.2s cubic-bezier(.15, .7, .3, 1) var(--d) forwards;
+  #confetti {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
   }
 
   @keyframes pop { from { transform: scale(.7); opacity: 0; } }
-
-  @keyframes fly {
-    0% { opacity: 1; transform: translate(0, 0) rotate(0); }
-    75% { opacity: 1; }
-    100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); }
-  }
 
   /* —— Entrada —— */
 
@@ -398,7 +393,6 @@
 </main>
 
 <dialog id="result" aria-labelledby="winner">
-  <div class="confetti" id="confetti" aria-hidden="true"></div>
   <div class="result">
     <p>Hoy toca</p>
     <h3 id="winner"></h3>
@@ -407,6 +401,7 @@
       <button class="secondary" id="again" type="button">Girar de nuevo</button>
     </div>
   </div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
 </dialog>
 
 <script>
@@ -450,6 +445,7 @@
   const addInput = $('add-input');
   const dialog = $('result');
   const confetti = $('confetti');
+  const confettiCtx = confetti.getContext('2d');
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -656,25 +652,117 @@
     updateStatus(winner);
 
     $('winner').textContent = winner;
-    celebrate();
     dialog.showModal();
+    launchConfetti();
   }
 
-  function celebrate() {
-    confetti.replaceChildren();
-    if (reduceMotion.matches) return;
-    const colors = ['#1C46C8', '#5B9BF5', '#BFE0FF', '#0B1F6B', '#F7FAFF'];
-    for (let i = 0; i < 34; i += 1) {
-      const piece = document.createElement('i');
-      const angle = random() * Math.PI * 2;
-      const distance = 170 + random() * 240;
-      piece.style.background = colors[i % colors.length];
-      piece.style.setProperty('--x', `${Math.cos(angle) * distance}px`);
-      piece.style.setProperty('--y', `${Math.sin(angle) * distance}px`);
-      piece.style.setProperty('--r', `${random() * 720 - 360}deg`);
-      piece.style.setProperty('--d', `${random() * 0.15}s`);
-      confetti.append(piece);
+  /* —— Confeti —— */
+
+  const CONFETTI_COLORS = ['#F7FAFF', '#BFE0FF', '#8FC1FF', '#5B9BF5', '#2F62E6'];
+  let confettiFrame = 0;
+
+  function stopConfetti() {
+    cancelAnimationFrame(confettiFrame);
+    confettiCtx.clearRect(0, 0, confetti.width, confetti.height);
+  }
+
+  function createPiece(x, y, vx, vy, delay) {
+    return {
+      x, y, vx, vy, delay,
+      width: 7 + Math.random() * 7,
+      height: 10 + Math.random() * 9,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 12,
+      tilt: Math.random() * Math.PI * 2,
+      tiltSpeed: 5 + Math.random() * 8,
+      sway: Math.random() * Math.PI * 2,
+    };
+  }
+
+  function createPieces(W, H) {
+    const pieces = [];
+
+    /* dos cañones desde las esquinas inferiores, en dos tandas */
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 70; i += 1) {
+        const aim = (12 + Math.random() * 40) * (Math.PI / 180);
+        const speed = H * (0.9 + Math.random() * 1.1);
+        pieces.push(createPiece(
+          side < 0 ? -10 : W + 10,
+          H + 10,
+          -side * Math.sin(aim) * speed,
+          -Math.cos(aim) * speed,
+          i < 42 ? Math.random() * 0.12 : 0.4 + Math.random() * 0.15,
+        ));
+      }
     }
+
+    /* lluvia desde arriba para cubrir el centro */
+    for (let i = 0; i < 90; i += 1) {
+      pieces.push(createPiece(
+        Math.random() * W,
+        -30,
+        (Math.random() - 0.5) * 60,
+        H * (0.1 + Math.random() * 0.35),
+        0.15 + Math.random() * 1.1,
+      ));
+    }
+    return pieces;
+  }
+
+  function launchConfetti() {
+    stopConfetti();
+    if (reduceMotion.matches) return;
+
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    confetti.width = Math.round(W * dpr);
+    confetti.height = Math.round(H * dpr);
+    confettiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const pieces = createPieces(W, H);
+    const gravity = H * 0.9;
+    const startedAt = performance.now();
+    let previous = startedAt;
+
+    function frame(time) {
+      const dt = Math.min(0.05, (time - previous) / 1000);
+      const elapsed = (time - startedAt) / 1000;
+      previous = time;
+      confettiCtx.clearRect(0, 0, W, H);
+
+      let alive = false;
+      for (const p of pieces) {
+        if (elapsed < p.delay) {
+          alive = true;
+          continue;
+        }
+        const drag = Math.exp(-1.4 * dt);
+        p.vx *= drag;
+        p.vy = p.vy * drag + gravity * dt;
+        p.sway += dt * 4;
+        p.x += (p.vx + Math.sin(p.sway) * 40) * dt;
+        p.y += p.vy * dt;
+        p.angle += p.spin * dt;
+        p.tilt += p.tiltSpeed * dt;
+        if (p.y > H + 30 && p.vy > 0) continue;
+        alive = true;
+
+        confettiCtx.save();
+        confettiCtx.translate(p.x, p.y);
+        confettiCtx.rotate(p.angle);
+        confettiCtx.scale(1, Math.cos(p.tilt));
+        confettiCtx.fillStyle = p.color;
+        confettiCtx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+        confettiCtx.restore();
+      }
+
+      if (alive && elapsed < 7) confettiFrame = requestAnimationFrame(frame);
+      else stopConfetti();
+    }
+    confettiFrame = requestAnimationFrame(frame);
   }
 
   /* —— Estado y lista —— */
@@ -802,6 +890,7 @@
   spinBtn.addEventListener('click', spin);
   $('accept').addEventListener('click', () => dialog.close());
   $('again').addEventListener('click', spin);
+  dialog.addEventListener('close', stopConfetti);
   dialog.addEventListener('click', (event) => {
     if (event.target === dialog) dialog.close();
   });
