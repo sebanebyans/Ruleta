@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Qué hacemos hoy?</title>
+<meta name="theme-color" content="#0E2BA3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Familjen+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #071548;
+    --navy: #0B1F6B;
+    --cobalt: #0E2BA3;
+    --royal: #1C46C8;
+    --sky: #5B9BF5;
+    --ice: #BFE0FF;
+    --paper: #F7FAFF;
+    --line: #C9DAF3;
+    --muted: #41568F;
+    --display: "Caprasimo", Georgia, serif;
+    --body: "Familjen Grotesk", "Trebuchet MS", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--paper);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.4;
+    background-color: var(--cobalt);
+    background-image:
+      radial-gradient(70vmax 60vmax at 25% 20%, rgba(91,155,245,.42), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23BFE0FF' stroke-opacity='.13' stroke-width='2'%3E%3Ccircle cx='0' cy='0' r='40'/%3E%3Ccircle cx='96' cy='0' r='40'/%3E%3Ccircle cx='0' cy='96' r='40'/%3E%3Ccircle cx='96' cy='96' r='40'/%3E%3Ccircle cx='48' cy='48' r='20'/%3E%3Cpath d='M48 28 L68 48 L48 68 L28 48 Z'/%3E%3C/g%3E%3C/svg%3E");
+    background-attachment: fixed;
+  }
+
+  main {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 16px 48px;
+    display: grid;
+    gap: 32px;
+  }
+
+  @media (min-width: 900px) {
+    main {
+      grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr);
+      align-items: center;
+      gap: 56px;
+      min-height: 100vh;
+      padding: 32px 32px;
+    }
+  }
+
+  /* —— Ruleta —— */
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    min-width: 0;
+  }
+
+  h1 {
+    margin: 0;
+    font: 400 clamp(2.4rem, 7vw, 4.1rem)/1 var(--display);
+    text-align: center;
+    letter-spacing: -.01em;
+    text-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .wheel-wrap {
+    position: relative;
+    width: min(100%, 68vh, 580px);
+    padding-top: 22px;
+  }
+
+  .wheel {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: 0 0 0 5px var(--ink), 10px 12px 0 5px var(--ink);
+  }
+
+  .wheel canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    will-change: transform;
+  }
+
+  .pointer {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 2;
+    width: 46px;
+    height: 62px;
+    transform: translateX(-50%);
+    transform-origin: 50% 18px;
+    filter: drop-shadow(2px 3px 0 var(--ink));
+  }
+
+  .hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 22%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 4px solid var(--ink);
+    border-radius: 50%;
+    background: var(--royal);
+    color: var(--paper);
+    font: 400 clamp(1rem, 3.6vw, 1.6rem)/1 var(--display);
+    cursor: pointer;
+    transition: transform .15s ease, background-color .15s ease;
+  }
+
+  .hub:hover:not(:disabled) { background: var(--navy); transform: translate(-50%, -50%) scale(1.06); }
+  .hub:active:not(:disabled) { transform: translate(-50%, -50%) scale(.95); }
+  .hub:disabled { cursor: default; background: var(--muted); }
+
+  .now {
+    min-height: 2.8em;
+    margin: 4px 0 0;
+    max-width: 100%;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .now.is-live { font-family: var(--display); font-weight: 400; font-size: 1.4rem; }
+
+  /* —— Lista —— */
+
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+  .panel {
+    min-width: 0;
+    padding: 24px 20px 18px;
+    border: 4px solid var(--ink);
+    border-radius: 22px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 8px 9px 0 var(--ink);
+  }
+
+  .panel fieldset:disabled { opacity: .6; }
+
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0 12px;
+  }
+
+  h2 { margin: 0; font: 400 1.8rem/1.1 var(--display); color: var(--royal); }
+
+  .count { color: var(--muted); font-size: .95rem; white-space: nowrap; }
+
+  .tip { margin: 4px 0 16px; color: var(--muted); font-size: .95rem; }
+
+  .add { display: flex; gap: 8px; }
+
+  input[type="text"] {
+    width: 100%;
+    min-width: 0;
+    font: 500 16px/1.3 var(--body);
+    color: var(--ink);
+  }
+
+  .add input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .add input::placeholder { color: var(--muted); }
+
+  .add button {
+    flex: none;
+    padding: 0 18px;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: var(--royal);
+    color: var(--paper);
+    font: 700 1rem/1 var(--body);
+    cursor: pointer;
+  }
+
+  .add button:hover:not(:disabled) { background: var(--navy); }
+
+  .items {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+  }
+
+  @media (min-width: 900px) {
+    .items { max-height: min(46vh, 420px); overflow-y: auto; padding-right: 4px; }
+  }
+
+  .items li {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-bottom: 2px solid var(--line);
+  }
+
+  .items input {
+    flex: 1;
+    padding: 10px 6px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+  }
+
+  .items input:hover:not(:disabled) { background: #E8F1FF; }
+  .items input:focus { background: #fff; }
+
+  .remove {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .remove:hover:not(:disabled) { background: var(--ice); color: var(--ink); }
+  .remove svg { width: 16px; height: 16px; }
+
+  .empty { margin: 18px 0 8px; color: var(--muted); text-align: center; }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin-top: 12px;
+  }
+
+  .tools button {
+    padding: 8px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--royal);
+    font: 700 .95rem/1.2 var(--body);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .tools button[data-armed] { color: var(--ink); }
+
+  :focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; }
+
+  /* —— Resultado —— */
+
+  dialog {
+    width: min(calc(100% - 32px), 480px);
+    padding: 0;
+    border: 5px solid var(--ink);
+    border-radius: 26px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 10px 12px 0 var(--ink);
+    overflow: visible;
+  }
+
+  dialog::backdrop { background: rgba(7, 21, 72, .72); }
+
+  dialog[open] { animation: pop .38s cubic-bezier(.2, 1.5, .4, 1); }
+
+  .result { padding: 32px 24px 24px; text-align: center; }
+
+  .result p { margin: 0; color: var(--muted); font-size: 1.1rem; font-weight: 500; }
+
+  .result h3 {
+    margin: 8px 0 24px;
+    font: 400 clamp(2rem, 8vw, 2.9rem)/1.08 var(--display);
+    color: var(--royal);
+    overflow-wrap: anywhere;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  .actions button {
+    flex: 1 1 170px;
+    padding: 14px 16px;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    font: 700 1.05rem/1.1 var(--body);
+    cursor: pointer;
+  }
+
+  .primary { background: var(--royal); color: var(--paper); }
+  .primary:hover { background: var(--navy); }
+  .secondary { background: var(--ice); color: var(--ink); }
+  .secondary:hover { background: #A5D1FB; }
+
+  .confetti { position: absolute; top: 40%; left: 50%; pointer-events: none; }
+
+  .confetti i {
+    position: absolute;
+    width: 11px;
+    height: 16px;
+    border-radius: 3px;
+    opacity: 0;
+    animation: fly 1.2s cubic-bezier(.15, .7, .3, 1) var(--d) forwards;
+  }
+
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } }
+
+  @keyframes fly {
+    0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)); }
+  }
+
+  /* —— Entrada —— */
+
+  .stage > *, .panel { animation: rise .6s cubic-bezier(.2, .8, .3, 1) backwards; }
+  .wheel-wrap { animation-delay: .08s !important; }
+  .now { animation-delay: .16s !important; }
+  .panel { animation-delay: .2s; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="stage" aria-label="Ruleta">
+    <h1>¿Qué hacemos hoy?</h1>
+
+    <div class="wheel-wrap">
+      <svg class="pointer" id="pointer" viewBox="0 0 46 62" aria-hidden="true">
+        <path d="M23 60 C16 44 4 32 4 20 a19 19 0 0 1 38 0 C42 32 30 44 23 60 Z" fill="#F7FAFF" stroke="#071548" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="23" cy="20" r="7" fill="#1C46C8"/>
+      </svg>
+      <div class="wheel" id="wheel">
+        <canvas id="canvas" role="img" aria-label="Ruleta con los panoramas de la lista"></canvas>
+        <button class="hub" id="spin" type="button">Girar</button>
+      </div>
+    </div>
+
+    <p class="now" id="now"></p>
+  </section>
+
+  <section class="panel" aria-label="Lista de panoramas">
+    <fieldset id="editor">
+      <div class="panel-head">
+        <h2>Panoramas</h2>
+        <span class="count" id="count"></span>
+      </div>
+      <p class="tip">Toca cualquiera para cambiarle el nombre.</p>
+
+      <form class="add" id="add-form">
+        <input type="text" id="add-input" maxlength="60" placeholder="Escribe uno" aria-label="Nuevo panorama" autocomplete="off">
+        <button type="submit">Agregar</button>
+      </form>
+
+      <ul class="items" id="items"></ul>
+      <p class="empty" id="empty" hidden>La lista está vacía. Escribe el primer panorama arriba.</p>
+
+      <div class="tools">
+        <button type="button" id="clear">Vaciar lista</button>
+        <button type="button" id="reset">Volver a la lista inicial</button>
+      </div>
+    </fieldset>
+  </section>
+</main>
+
+<dialog id="result" aria-labelledby="winner">
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <div class="result">
+    <p>Hoy toca</p>
+    <h3 id="winner"></h3>
+    <div class="actions">
+      <button class="primary" id="accept" type="button">Vamos con ese</button>
+      <button class="secondary" id="again" type="button">Girar de nuevo</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'ruleta-panoramas-v1';
+
+  const DEFAULTS = [
+    'Picnic en el parque',
+    'Noche de juegos de mesa',
+    'Cine en casa con cabritas',
+    'Caminata al cerro',
+    'Paseo en bicicleta',
+    'Ir a la playa',
+    'Cocinar pizzas juntos',
+    'Helado en la plaza',
+    'Visitar un museo',
+    'Ir al zoológico',
+    'Once con los abuelos',
+    'Completos en casa',
+  ];
+
+  const SEGMENTS = [
+    { fill: '#0B1F6B', text: '#F7FAFF' },
+    { fill: '#5B9BF5', text: '#071548' },
+    { fill: '#1C46C8', text: '#F7FAFF' },
+    { fill: '#BFE0FF', text: '#071548' },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const wheelEl = $('wheel');
+  const canvas = $('canvas');
+  const ctx = canvas.getContext('2d');
+  const pointer = $('pointer');
+  const spinBtn = $('spin');
+  const now = $('now');
+  const editor = $('editor');
+  const listEl = $('items');
+  const emptyEl = $('empty');
+  const countEl = $('count');
+  const addForm = $('add-form');
+  const addInput = $('add-input');
+  const dialog = $('result');
+  const confetti = $('confetti');
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  let items = load().map((text) => ({ text }));
+  let rotation = 0;
+  let spinning = false;
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (Array.isArray(saved) && saved.every((t) => typeof t === 'string')) return saved;
+    } catch (e) { /* sin datos guardados */ }
+    return [...DEFAULTS];
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items.map((i) => i.text.trim()).filter(Boolean)));
+    } catch (e) { /* el navegador no permite guardar */ }
+  }
+
+  const active = () => items.map((i) => i.text.trim()).filter(Boolean);
+
+  const random = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+
+  /* —— Dibujo —— */
+
+  function segmentStyle(i, n) {
+    let index = i % SEGMENTS.length;
+    if (i === n - 1 && n > 1 && index === 0) index = 1;
+    return SEGMENTS[index];
+  }
+
+  function wrap(text, maxWidth) {
+    const lines = [];
+    let line = '';
+    for (const word of text.split(/\s+/)) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(candidate).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function ellipsize(text, maxWidth) {
+    let out = text;
+    while (out.length > 1 && ctx.measureText(`${out}…`).width > maxWidth) out = out.slice(0, -1);
+    return `${out.trimEnd()}…`;
+  }
+
+  function fitLabel(text, maxWidth, arcHeight, R) {
+    const largest = Math.min(Math.max(R * 0.085, 13), 25);
+    const smallest = 10;
+    for (let size = largest; size >= smallest; size -= 1) {
+      ctx.font = `700 ${size}px "Familjen Grotesk", "Trebuchet MS", sans-serif`;
+      const maxLines = Math.max(1, Math.min(3, Math.floor((arcHeight * 0.82) / (size * 1.14))));
+      const lines = wrap(text, maxWidth);
+      if (lines.length <= maxLines && lines.every((l) => ctx.measureText(l).width <= maxWidth)) {
+        return { size, lines };
+      }
+    }
+    return { size: smallest, lines: [ellipsize(text, maxWidth)] };
+  }
+
+  function draw() {
+    const size = wheelEl.clientWidth;
+    if (!size) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    canvas.width = canvas.height = Math.round(size * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, (size / 2) * dpr, (size / 2) * dpr);
+
+    const R = size / 2;
+    const r = R * 0.93;
+    const list = active();
+    const n = list.length;
+
+    ctx.fillStyle = '#F7FAFF';
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (n === 0) {
+      ctx.fillStyle = '#BFE0FF';
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const step = n ? (Math.PI * 2) / n : 0;
+    const textEnd = R * 0.86;
+    const maxWidth = R * 0.54;
+
+    list.forEach((label, i) => {
+      const start = -Math.PI / 2 + i * step;
+      const style = segmentStyle(i, n);
+
+      ctx.fillStyle = style.fill;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, r, start, start + step);
+      ctx.closePath();
+      ctx.fill();
+      if (n > 1) {
+        ctx.strokeStyle = '#F7FAFF';
+        ctx.lineWidth = Math.max(1, R * 0.008);
+        ctx.stroke();
+      }
+
+      const arcHeight = n === 1 ? R : Math.min(R, step * R * 0.58);
+      const { size: fontSize, lines } = fitLabel(label, maxWidth, arcHeight, R);
+      const lineHeight = fontSize * 1.14;
+
+      ctx.save();
+      ctx.rotate(start + step / 2);
+      ctx.font = `700 ${fontSize}px "Familjen Grotesk", "Trebuchet MS", sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = style.text;
+      lines.forEach((line, l) => {
+        ctx.fillText(line, textEnd, (l - (lines.length - 1) / 2) * lineHeight);
+      });
+      ctx.restore();
+
+      if (n > 1) {
+        ctx.fillStyle = '#1C46C8';
+        ctx.beginPath();
+        ctx.arc(Math.cos(start) * R * 0.965, Math.sin(start) * R * 0.965, Math.max(2, Math.min(R * 0.02, step * R * 0.14)), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    /* roseta central, estilo azulejo */
+    ctx.fillStyle = '#F7FAFF';
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    for (let p = 0; p < 12; p += 1) {
+      const a = (p / 12) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * R * 0.255, Math.sin(a) * R * 0.255, R * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function applyRotation() {
+    canvas.style.transform = `rotate(${rotation}deg)`;
+  }
+
+  /* —— Giro —— */
+
+  function indexAt(angle, n) {
+    const atPointer = ((360 - (angle % 360)) % 360 + 360) % 360;
+    return Math.min(n - 1, Math.floor(atPointer / (360 / n)));
+  }
+
+  function spin() {
+    const list = active();
+    if (spinning || list.length < 2) return;
+    if (dialog.open) dialog.close();
+
+    spinning = true;
+    spinBtn.disabled = true;
+    editor.disabled = true;
+    now.classList.add('is-live');
+
+    const from = rotation;
+    const to = from + 360 * (5 + Math.floor(random() * 3)) + random() * 360;
+    const duration = reduceMotion.matches ? 0 : 5400;
+    const startedAt = performance.now();
+    let current = -1;
+    let kick = 0;
+
+    function frame(time) {
+      const t = duration ? Math.min(1, (time - startedAt) / duration) : 1;
+      rotation = from + (to - from) * (1 - (1 - t) ** 4);
+      applyRotation();
+
+      const index = indexAt(rotation, list.length);
+      if (index !== current) {
+        if (current !== -1) kick = 1;
+        current = index;
+        now.textContent = list[index];
+      }
+      kick *= 0.86;
+      pointer.style.transform = `translateX(-50%) rotate(${kick * -22}deg)`;
+
+      if (t < 1) requestAnimationFrame(frame);
+      else finish(list[current]);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function finish(winner) {
+    spinning = false;
+    rotation %= 360;
+    applyRotation();
+    pointer.style.transform = 'translateX(-50%)';
+    editor.disabled = false;
+    updateStatus(winner);
+
+    $('winner').textContent = winner;
+    celebrate();
+    dialog.showModal();
+  }
+
+  function celebrate() {
+    confetti.replaceChildren();
+    if (reduceMotion.matches) return;
+    const colors = ['#1C46C8', '#5B9BF5', '#BFE0FF', '#0B1F6B', '#F7FAFF'];
+    for (let i = 0; i < 34; i += 1) {
+      const piece = document.createElement('i');
+      const angle = random() * Math.PI * 2;
+      const distance = 170 + random() * 240;
+      piece.style.background = colors[i % colors.length];
+      piece.style.setProperty('--x', `${Math.cos(angle) * distance}px`);
+      piece.style.setProperty('--y', `${Math.sin(angle) * distance}px`);
+      piece.style.setProperty('--r', `${random() * 720 - 360}deg`);
+      piece.style.setProperty('--d', `${random() * 0.15}s`);
+      confetti.append(piece);
+    }
+  }
+
+  /* —— Estado y lista —— */
+
+  function updateStatus(winner) {
+    const n = active().length;
+    spinBtn.disabled = spinning || n < 2;
+    countEl.textContent = n === 1 ? '1 panorama' : `${n} panoramas`;
+
+    if (winner) {
+      now.classList.add('is-live');
+      now.textContent = winner;
+      return;
+    }
+    now.classList.remove('is-live');
+    if (n === 0) now.textContent = 'Agrega al menos dos panoramas para girar.';
+    else if (n === 1) now.textContent = 'Falta uno más para poder girar.';
+    else now.textContent = 'Toca Girar y que decida la suerte.';
+  }
+
+  function listChanged() {
+    save();
+    draw();
+    updateStatus();
+  }
+
+  function removeItem(item) {
+    items = items.filter((i) => i !== item);
+    renderList();
+    listChanged();
+  }
+
+  function createRow(item, position) {
+    const li = document.createElement('li');
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 60;
+    input.value = item.text;
+    input.autocomplete = 'off';
+    input.setAttribute('aria-label', `Panorama ${position}`);
+    input.addEventListener('input', () => {
+      item.text = input.value;
+      listChanged();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') input.blur();
+    });
+    input.addEventListener('blur', () => {
+      if (!item.text.trim()) {
+        removeItem(item);
+        return;
+      }
+      item.text = item.text.trim();
+      input.value = item.text;
+    });
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'remove';
+    remove.setAttribute('aria-label', `Quitar ${item.text || 'panorama'}`);
+    remove.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+    remove.addEventListener('click', () => {
+      removeItem(item);
+      addInput.focus();
+    });
+
+    li.append(input, remove);
+    return li;
+  }
+
+  function renderList() {
+    listEl.replaceChildren(...items.map((item, i) => createRow(item, i + 1)));
+    emptyEl.hidden = items.length > 0;
+  }
+
+  function confirmStep(button, question, action) {
+    const label = button.textContent;
+    let timer;
+    const disarm = () => {
+      clearTimeout(timer);
+      delete button.dataset.armed;
+      button.textContent = label;
+    };
+    button.addEventListener('click', () => {
+      if (button.dataset.armed) {
+        disarm();
+        action();
+        return;
+      }
+      button.dataset.armed = 'true';
+      button.textContent = question;
+      timer = setTimeout(disarm, 3500);
+    });
+  }
+
+  /* —— Eventos —— */
+
+  addForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const text = addInput.value.trim();
+    if (text) {
+      items.unshift({ text });
+      addInput.value = '';
+      renderList();
+      listChanged();
+      listEl.scrollTop = 0;
+    }
+    addInput.focus();
+  });
+
+  confirmStep($('clear'), '¿Borrar todo? Toca otra vez', () => {
+    items = [];
+    renderList();
+    listChanged();
+    addInput.focus();
+  });
+
+  confirmStep($('reset'), '¿Reemplazar tu lista? Toca otra vez', () => {
+    items = DEFAULTS.map((text) => ({ text }));
+    renderList();
+    listChanged();
+  });
+
+  spinBtn.addEventListener('click', spin);
+  $('accept').addEventListener('click', () => dialog.close());
+  $('again').addEventListener('click', spin);
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+
+  new ResizeObserver(draw).observe(wheelEl);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+
+  renderList();
+  draw();
+  updateStatus();
+})();
+</script>
+</body>
+</html>
