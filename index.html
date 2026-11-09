@@ -89,6 +89,7 @@
     aspect-ratio: 1;
     border-radius: 50%;
     box-shadow: 0 0 0 5px var(--ink), 10px 12px 0 5px var(--ink);
+    overflow: hidden;
   }
 
   .wheel canvas {
@@ -300,6 +301,27 @@
     animation: pop .38s cubic-bezier(.2, 1.5, .4, 1);
   }
 
+  .result { position: relative; }
+
+  .result .close {
+    padding: 0;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .result .close:hover { background: var(--ice); color: var(--ink); }
+  .close svg { width: 18px; height: 18px; }
+
   .result p { margin: 0; color: var(--muted); font-size: 1.1rem; font-weight: 500; }
 
   .result h3 {
@@ -399,6 +421,7 @@
     <div class="actions">
       <button class="primary" id="accept" type="button">Vamos con ese</button>
       <button class="secondary" id="again" type="button">Girar de nuevo</button>
+      <button class="close" id="close" type="button" aria-label="Cerrar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
     </div>
   </div>
   <canvas id="confetti" aria-hidden="true"></canvas>
@@ -889,6 +912,7 @@
 
   spinBtn.addEventListener('click', spin);
   $('accept').addEventListener('click', () => dialog.close());
+  $('close').addEventListener('click', () => dialog.close());
   $('again').addEventListener('click', spin);
   dialog.addEventListener('close', stopConfetti);
   dialog.addEventListener('click', (event) => {
